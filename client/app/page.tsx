@@ -56,6 +56,18 @@ export default function Home() {
     }
   }
 
+  async function handleDelete(id: number) {
+    try {
+      const res = await fetch(`${API_URL}/api/recipes/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete");
+      loadRecipes();
+    } catch {
+      setError("Could not delete the recipe.");
+    }
+  }
+
   return (
     <main className="mx-auto max-w-2xl p-8">
       <h1 className="text-3xl font-bold mb-6">MealMap</h1>
@@ -95,6 +107,12 @@ export default function Home() {
             <h2 className="text-xl font-semibold">{r.title}</h2>
             <p className="text-sm text-gray-600">Serves {r.servings}</p>
             <p className="mt-2">{r.steps}</p>
+            <button
+              className="mt-3 text-sm text-red-600 underline"
+              onClick={() => handleDelete(r.id)}
+            >
+              Delete
+            </button>
           </li>
         ))}
       </ul>
