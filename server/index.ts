@@ -57,6 +57,32 @@ app.post("/api/recipes", async (req, res) => {
   }
 });
 
+app.put("/api/recipes/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const { title, servings, steps } = req.body;
+
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: "Invalid recipe id" });
+  }
+  if (!title || typeof title !== "string") {
+    return res.status(400).json({ error: "Title is required" });
+  }
+
+  try {
+    const result = await pool.query(
+      "UPDATE recipes SET title = $1, servings = $2, steps = $3 WHERE id = $4 RETURNING *",
+      [title, servings ?? 1, steps ?? "", id]
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Recipe not found" });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Could not update recipe" });
+  }
+});
+
 app.delete("/api/recipes/:id", async (req, res) => {
   const id = Number(req.params.id);
 

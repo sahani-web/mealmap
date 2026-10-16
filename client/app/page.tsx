@@ -16,6 +16,7 @@ export default function Home() {
   const [title, setTitle] = useState("");
   const [servings, setServings] = useState(1);
   const [steps, setSteps] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -36,20 +37,39 @@ export default function Home() {
     loadRecipes();
   }, []);
 
+  function resetForm() {
+    setTitle("");
+    setServings(1);
+    setSteps("");
+    setEditingId(null);
+  }
+
+  function startEdit(r: Recipe) {
+    setEditingId(r.id);
+    setTitle(r.title);
+    setServings(r.servings);
+    setSteps(r.steps);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
     if (!title.trim()) return;
 
+    const url =
+      editingId === null
+        ? `${API_URL}/api/recipes`
+        : `${API_URL}/api/recipes/${editingId}`;
+    const method = editingId === null ? "POST" : "PUT";
+
     try {
-      const res = await fetch(`${API_URL}/api/recipes`, {
-        method: "POST",
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, servings, steps }),
       });
       if (!res.ok) throw new Error("Failed to save");
-      setTitle("");
-      setServings(1);
-      setSteps("");
+      resetForm();
       loadRecipes();
     } catch {
       setError("Could not save the recipe.");
@@ -62,6 +82,7 @@ export default function Home() {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete");
+      if (editingId === id) resetForm();
       loadRecipes();
     } catch {
       setError("Could not delete the recipe.");
@@ -92,9 +113,20 @@ export default function Home() {
           value={steps}
           onChange={(e) => setSteps(e.target.value)}
         />
-        <button className="bg-black text-white rounded px-4 py-2" type="submit">
-          Add recipe
-        </button>
+        <div className="flex gap-3">
+          <button className="bg-black text-white rounded px-4 py-2" type="submit">
+            {editingId === null ? "Add recipe" : "Save changes"}
+          </button>
+          {editingId !== null && (
+            <button
+              type="button"
+              className="border rounded px-4 py-2"
+              onClick={resetForm}
+            >
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
 
       {loading && <p>Loading...</p>}
@@ -107,12 +139,17 @@ export default function Home() {
             <h2 className="text-xl font-semibold">{r.title}</h2>
             <p className="text-sm text-gray-600">Serves {r.servings}</p>
             <p className="mt-2">{r.steps}</p>
-            <button
-              className="mt-3 text-sm text-red-600 underline"
-              onClick={() => handleDelete(r.id)}
-            >
-              Delete
-            </button>
+            <div className="mt-3 flex gap-4 text-sm">
+              <button className="underline" onClick={() => startEdit(r)}>
+                Edit
+              </button>
+              <button
+                className="text-red-600 underline"
+                onClick={() => handleDelete(r.id)}
+              >
+                Delete
+              </button>
+            </div>
           </li>
         ))}
       </ul>
