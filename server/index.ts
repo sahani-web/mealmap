@@ -26,6 +26,37 @@ app.get("/api/db-check", async (req, res) => {
   }
 });
 
+app.get("/api/recipes", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM recipes ORDER BY created_at DESC"
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Could not fetch recipes" });
+  }
+});
+
+app.post("/api/recipes", async (req, res) => {
+  const { title, servings, steps } = req.body;
+
+  if (!title || typeof title !== "string") {
+    return res.status(400).json({ error: "Title is required" });
+  }
+
+  try {
+    const result = await pool.query(
+      "INSERT INTO recipes (title, servings, steps) VALUES ($1, $2, $3) RETURNING *",
+      [title, servings ?? 1, steps ?? ""]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Could not save recipe" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
